@@ -7,7 +7,7 @@ import logging
 import argparse
 import importlib
 import os
-import bothandler
+from bothandler import BotHandler
 
 # TODO: functionality for restart 
 # TODO: logging module to file, with names
@@ -45,11 +45,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.debug:
-        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s - %(func)s] - %(message)s', level = logging.DEBUG, datefmt = '%d/%m/%Y %H:%M:%S')
+        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s] - %(message)s', level = logging.DEBUG, datefmt = '%d/%m/%Y %H:%M:%S')
     elif args.verbose:
-        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s - %(func)s] - %(message)s', level = logging.INFO, datefmt = '%d/%m/%Y %H:%M:%S')
+        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s] - %(message)s', level = logging.INFO, datefmt = '%d/%m/%Y %H:%M:%S')
     else:
-        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s - %(func)s] - %(message)s', datefmt = '%d/%m/%Y %H:%M:%S')
+        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s] - %(message)s', datefmt = '%d/%m/%Y %H:%M:%S')
         
     logger = logging.getLogger(__name__)
     logger.info('Logging initialized')
