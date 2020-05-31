@@ -98,6 +98,8 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         logger.warning("CTRL + C detected, waiting for observers to finish")
         for observer in observers:
+            observer.stop()
+        for observer in observers:
             observer.join()
 
 
