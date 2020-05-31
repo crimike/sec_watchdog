@@ -7,9 +7,10 @@ import logging
 import argparse
 import importlib
 import os
+import bothandler
 
 # TODO: functionality for restart 
-# TODO: logging module to file
+# TODO: logging module to file, with names
 
 CHAT_ID = 'chat_id'
 CONFIG_FILE = 'config.ini'
@@ -22,51 +23,14 @@ LOG_PATH = 'log_path'
 
 def read_config(filename):
     config = configparser.ConfigParser()
-    logging.info("Reading the configuration from " + filename)
+    logger = logging.getLogger(__name__)
     config.read(filename)
-    logging.info('Config file ' + filename + ' read')
+    logger.info('Config file ' + filename + ' read')
     for section in config.sections():
-        logging.debug('Found section ' + section)
+        logger.debug('Found section ' + section)
         for key in config[section].keys():
-            logging.debug('Read ' + key + ':' + config[section][key])
+            logger.debug('Read ' + key + ':' + config[section][key])
     return config
-
-class BotHandler:
-
-    def __init__(self, token, start_command = 'Start', chat_id = ''):
-        logging.debug("Initializing bot with token: " + token)
-        self.bot = telegram.Bot(token=token)
-        logging.info('Bot ' + self.bot.getMe().full_name + ' successfully initialized')
-        self.chat_id = chat_id
-        if chat_id != '':
-            logging.debug("Chat ID set to " + str(self.chat_id))
-        self.start_command = start_command
-        logging.debug("Start command set to " + self.start_command)
-
-    def wait_for_user(self):
-        logging.info('Start command is ' + self.start_command + ", waiting for users")
-        while len(self.bot.get_updates()) == 0:
-            sleep(5)
-
-        upd = self.bot.get_updates()[0]
-        logging.info('Got first message from ' + str(upd.message.from_user.username) + ':' + upd.message.text)
-        while upd.message.text != self.start_command:
-            while len(self.bot.get_updates(offset = upd.update_id + 1)) == 0:
-                sleep(5)
-            upd = self.bot.get_updates(offset = upd.update_id + 1)[0]
-            logging.info('Got another message from ' + str(upd.message.from_user) + ':' + upd.message.text)
-        self.bot.get_updates(offset = upd.update_id + 1)
-        logging.debug('Chat id of user is ' + str(upd.message.chat_id))
-        self.bot.send_message(chat_id = upd.message.chat_id, text = "Connection successful, welcome!")
-        return upd.message.chat_id
-
-    def notify_user(self, message):
-        if message == None or message == '':
-            return
-        logging.debug("Sending the following message to chat ID: " + str(self.chat_id))
-        logging.debug(message)
-        self.bot.send_message(chat_id = self.chat_id, text = message)
-
 
 
 
@@ -81,17 +45,18 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.debug:
-        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level = logging.DEBUG)
+        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s - %(func)s] - %(message)s', level = logging.DEBUG, datefmt = '%d/%m/%Y %H:%M:%S')
     elif args.verbose:
-        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level = logging.INFO)
+        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s - %(func)s] - %(message)s', level = logging.INFO, datefmt = '%d/%m/%Y %H:%M:%S')
     else:
-        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(format='%(asctime)s - %(levelname)s[%(name)s - %(func)s] - %(message)s', datefmt = '%d/%m/%Y %H:%M:%S')
         
-    logging.info('Logging initialized')
+    logger = logging.getLogger(__name__)
+    logger.info('Logging initialized')
     # read config
     if args.config != None:
         CONFIG_FILE = args.config
-    print(CONFIG_FILE)
+    logger.debug('Reading config file ' + CONFIG_FILE)
     config = read_config(CONFIG_FILE)
 
     bot = None
@@ -107,18 +72,23 @@ if __name__ == '__main__':
     for section in config.sections():
         if section == 'MAIN':
             continue
-        logging.debug("Importing " + config[section][IMPORT_FILE])
+        logger.debug("Importing " + config[section][IMPORT_FILE])
         module = importlib.import_module(config[section][IMPORT_FILE])
         o = Observer()
-        logging.debug('Extracting class ' + config[section][CLASS_NAME])
+        logger.debug('Extracting class ' + config[section][CLASS_NAME])
         event_handler_class =   getattr(module, config[section][CLASS_NAME])
         event_handler = event_handler_class(config[section], bot.notify_user)
-        # check if terminator is there, or if its a file
-        logging.debug("Scheduling event handler for path " + os.path.dirname(config[section][LOG_PATH]))
-        o.schedule(event_handler, os.path.dirname(config[section][LOG_PATH]))
+        file_path = config[section][LOG_PATH]
+        if os.path.isfile(file_path):
+            logger.debug("Scheduling event handler for path " + os.path.dirname(file_path))
+            o.schedule(event_handler, os.path.dirname(file_path))
+        elif os.path.isdir(file_path):
+            logger.debug("Scheduling event handler for path " + file_path)
+            o.schedule(event_handler, file_path)
         observers.append(o)
 
 
+    logger.info("Starting observers")
     for observer in observers:
         observer.start()
 
@@ -126,6 +96,7 @@ if __name__ == '__main__':
         while True:
             sleep(1)
     except KeyboardInterrupt:
+        logger.warning("CTRL + C detected, waiting for observers to finish")
         for observer in observers:
             observer.join()
 

@@ -9,63 +9,65 @@ class AuthEventHandler(FileSystemEventHandler):
         self.path = config['log_path']
         self.tell = 0
         self.notify = notify_function
+        self.logger = logging.getLogger(__name__)
         #self.logging = logging.getLogger(__name_)
         #self.logging.basicConfig(
 
     def parse_log(self, log):
-        logging.info("Handling information from the log")
+        self.logger.info("Handling information from the log")
         for line in log.split('\n'):
+            self.logger.debug(line)
             if 'sshd' in line:
                 # SSH event
-                logging.info("SSH event encountered")
-                logging.debug(line)
-                evt = line.split(':')[3]
-                if '[preauth]' not in evt:
+                self.logger.info("SSH event encountered")
+                evt = ''.join(line.split(':')[3:])
+                #if '[preauth]' not in evt:
                     # preauth fails before authentication
+                if 'session closed for user' not in evt and 'session opened for user' not in evt:
                     self.notify(evt)
-            if 'sudo:' in line:
+            if 'sudo: ' in line:
                 # Sudo event
-                logging.info("Sudo event encountered")
-                logging.debug(line)
-                evt = line.split('sudo:')[1]
-                self.notify(evt)
+                self.logger.info("Sudo event encountered")
+                evt = ''.join(line.split('sudo: ')[1:])
+                if 'session closed for user' not in evt and 'session opened for user' not in evt:
+                    self.notify(evt)
                 
 
     def dispatch(self, event):
         if event.src_path == self.path:
-            logging.debug("Dispatching modified event for " + event.src_path)
+            self.logger.debug("Dispatching modified event for " + event.src_path)
             super().dispatch(event)
 
     def on_modified(self, event):
-        logging.info("Modification event is being handled for " + event.src_path)
+        self.logger.info("Modification event is being handled for " + event.src_path)
         f = open(event.src_path,'r')
         if self.tell == 0:
             # new file, parse last line
-            logging.info("First time a modification was recorded for this file")
+            self.logger.info("First time a modification was recorded for this file, grabbing last line")
             log = f.readlines()[-1]
             self.parse_log(log)
             self.tell = f.tell()
-            logging.debug("Setting new tell to " + str(self.tell))
+            self.logger.debug("Setting new tell to " + str(self.tell))
         else:
             f.read()
             new_tell = f.tell()
-            logging.debug("File length is " + str(new_tell))
+            self.logger.debug("File length is " + str(new_tell))
             if new_tell < self.tell:
                 # new file is shorter than previous - logrotate for example
-                logging.debug("New file is shorter than previous, parsing everything")
+                self.logger.debug("New file is shorter than previous, parsing everything")
                 f.seek(0)
                 log = f.read()
                 self.parse_log(log)
                 self.tell = new_tell
-                logging.debug("Setting new tell to " + str(new_tell))
+                self.logger.debug("Setting new tell to " + str(new_tell))
             else:
                 # content was added to the file
-                logging.debug("Content was added to " + event.src_path)
+                self.logger.debug("Content was added to " + event.src_path)
                 f.seek(self.tell)
                 log = f.read()
                 self.parse_log(log)
                 self.tell = f.tell()
-                logging.debug("Setting new tell to " + str(self.tell))
+                self.logger.debug("Setting new tell to " + str(self.tell))
 
         f.close()
 
