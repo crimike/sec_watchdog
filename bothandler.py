@@ -4,10 +4,11 @@ from time import sleep
 
 class BotHandler:
 
-    def __init__(self, token, start_command = 'Start', chat_id = ''):
+    def __init__(self, token, start_command = 'Start', chat_id = '', prefix = ''):
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing bot ...")
         self.bot = telegram.Bot(token=token)
+        self.prefix = prefix
         self.logger.info('Bot ' + self.bot.getMe().full_name + ' successfully initialized')
         self.chat_id = chat_id
         if chat_id != '':
@@ -36,6 +37,7 @@ class BotHandler:
         if message == None or message == '':
             return
         self.logger.debug("Sending the following message to chat ID: " + str(self.chat_id))
-        self.logger.debug(message)
-        self.bot.send_message(chat_id = self.chat_id, text = message)
+        msg = self.prefix + ": " + message
+        self.logger.debug(msg)
+        self.bot.send_message(chat_id = self.chat_id, text = msg)
 

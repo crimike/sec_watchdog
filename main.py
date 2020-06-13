@@ -19,6 +19,7 @@ START_COMMAND = 'start_command'
 IMPORT_FILE = 'import_file'
 CLASS_NAME = 'class_name'
 LOG_PATH = 'log_path'
+PREFIX = 'prefix'
 
 
 def read_config(filename):
@@ -62,10 +63,10 @@ if __name__ == '__main__':
     bot = None
 
     if CHAT_ID not in list(config['MAIN'].keys()) or config['MAIN'][CHAT_ID] == '':
-        bot = BotHandler(config['MAIN'][BOT_TOKEN], start_command = config['MAIN'][START_COMMAND])
+        bot = BotHandler(config['MAIN'][BOT_TOKEN], start_command = config['MAIN'][START_COMMAND], prefix = config['MAIN'][PREFIX])
         bot.wait_for_user()
     else:
-        bot = BotHandler(config['MAIN'][BOT_TOKEN], chat_id = config['MAIN'][CHAT_ID])
+        bot = BotHandler(config['MAIN'][BOT_TOKEN], chat_id = config['MAIN'][CHAT_ID], prefix = config['MAIN'][PREFIX])
 
     observers = []
     # go through each section, dinamically load the class   
@@ -73,6 +74,7 @@ if __name__ == '__main__':
         if section == 'MAIN':
             continue
         logger.debug("Importing " + config[section][IMPORT_FILE])
+        # TODO: add functionality for something to run regularly,not necessarily a filesystem watchdog
         module = importlib.import_module(config[section][IMPORT_FILE])
         o = Observer()
         logger.debug('Extracting class ' + config[section][CLASS_NAME])
