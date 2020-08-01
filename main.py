@@ -73,6 +73,7 @@ if __name__ == '__main__':
     for section in config.sections():
         if section == 'MAIN':
             continue
+        logger.info("Parsing and registering " + section + " section")
         logger.debug("Importing " + config[section][IMPORT_FILE])
         # TODO: add functionality for something to run regularly,not necessarily a filesystem watchdog
         module = importlib.import_module(config[section][IMPORT_FILE])
