@@ -19,7 +19,7 @@ class PortAliveAlarm(TimerEvent):
         self.hosts = []
         self.logger.debug("Registering " + str(all_hosts))
         for host in all_hosts:
-            self.logger.info("Registering " + host + " for monitoring SSH alive state")
+            self.logger.info("Registering " + host + " for monitoring Port alive state")
             self.hosts.append(Host(host))
         
 

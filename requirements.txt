@@ -1,0 +1,3 @@
+watchdog
+python-telegram-bot
+schedule
