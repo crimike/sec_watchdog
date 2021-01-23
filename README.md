@@ -61,4 +61,12 @@ class_name = PortAliveAlarm
 hosts = 127.0.0.1:22
 rtime = 5
 type = time
+
+[HTTP_ALIVE_ALARM]
+import_file = http_alive_alarm
+class_name = HttpAliveAlarm
+; url needs to return a 200
+urls = https://google.com
+rtime = 5
+type = time
 ```
