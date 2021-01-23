@@ -6,6 +6,7 @@ import configparser
 import logging
 import argparse
 import importlib
+import schedule
 import os
 from bothandler import BotHandler
 
@@ -20,7 +21,10 @@ IMPORT_FILE = 'import_file'
 CLASS_NAME = 'class_name'
 LOG_PATH = 'log_path'
 PREFIX = 'prefix'
-
+TYPE = 'type'
+FILESYSTEM_EVENT = 'fs'
+TIMER_EVENT = 'time'
+REPEAT_TIME = 'rtime'
 
 def read_config(filename):
     config = configparser.ConfigParser()
@@ -75,20 +79,27 @@ if __name__ == '__main__':
             continue
         logger.info("Parsing and registering " + section + " section")
         logger.debug("Importing " + config[section][IMPORT_FILE])
-        # TODO: add functionality for something to run regularly,not necessarily a filesystem watchdog
         module = importlib.import_module(config[section][IMPORT_FILE])
-        o = Observer()
-        logger.debug('Extracting class ' + config[section][CLASS_NAME])
-        event_handler_class =   getattr(module, config[section][CLASS_NAME])
-        event_handler = event_handler_class(config[section], bot.notify_user)
-        file_path = config[section][LOG_PATH]
-        if os.path.isfile(file_path):
-            logger.debug("Scheduling event handler for path " + os.path.dirname(file_path))
-            o.schedule(event_handler, os.path.dirname(file_path))
-        elif os.path.isdir(file_path):
-            logger.debug("Scheduling event handler for path " + file_path)
-            o.schedule(event_handler, file_path)
-        observers.append(o)
+        if config[section][TYPE] == FILESYSTEM_EVENT:
+            o = Observer()
+            logger.debug('Extracting class ' + config[section][CLASS_NAME])
+            event_handler_class =   getattr(module, config[section][CLASS_NAME])
+            event_handler = event_handler_class(config[section], bot.notify_user)
+            file_path = config[section][LOG_PATH]
+            if os.path.isfile(file_path):
+                logger.debug("Scheduling event handler for path " + os.path.dirname(file_path))
+                o.schedule(event_handler, os.path.dirname(file_path))
+            elif os.path.isdir(file_path):
+                logger.debug("Scheduling event handler for path " + file_path)
+                o.schedule(event_handler, file_path)
+            observers.append(o)
+        elif config[section][TYPE] == TIMER_EVENT:
+            rtime = int(config[section][REPEAT_TIME])
+            logger.debug('Extracting class ' + config[section][CLASS_NAME])
+            event_handler_class =   getattr(module, config[section][CLASS_NAME])
+            event_handler = event_handler_class(config[section], bot.notify_user)
+            schedule.every(rtime).minutes.do(event_handler.invoke)
+        
 
 
     logger.info("Starting observers")
@@ -98,6 +109,7 @@ if __name__ == '__main__':
     try:
         while True:
             sleep(1)
+            schedule.run_pending()
     except KeyboardInterrupt:
         logger.warning("CTRL + C detected, waiting for observers to finish")
         for observer in observers:
