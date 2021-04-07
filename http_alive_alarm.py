@@ -18,7 +18,7 @@ class HttpAliveAlarm(TimerEvent):
         self.logger.debug("Registering " + str(all_urls))
         self.urls = []
         for url in all_urls:
-            self.logger.info("Registering " + url + " for monitoring HTTP status")
+            self.logger.info("Registering " + url + " for monitoring HTTP status every " + config['rtime'] + " minutes")
             self.urls.append(Url(url))
         
 
