@@ -1,14 +1,15 @@
 import telegram
 import logging
 from time import sleep
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 class BotHandler:
 
-    def __init__(self, token, start_command = 'Start', chat_id = '', prefix = ''):
+    def __init__(self, token, start_command = 'Start', chat_id = ''):
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing bot ...")
         self.bot = telegram.Bot(token=token)
-        self.prefix = prefix
+        self.updater = Updater(token, use_context = True)
         self.logger.info('Bot ' + self.bot.getMe().full_name + ' successfully initialized')
         self.chat_id = chat_id
         if chat_id != '':
@@ -37,7 +38,12 @@ class BotHandler:
         if message == None or message == '':
             return
         self.logger.debug("Sending the following message to chat ID: " + str(self.chat_id))
-        msg = self.prefix + ": " + message
-        self.logger.debug(msg)
+        self.logger.debug(message)
         self.bot.send_message(chat_id = self.chat_id, text = msg)
 
+    def register_command(self, command, handler):
+        dispatcher = self.updater.dispatcher
+        dispatcher.add_handler(CommandHandler(command, handler))
+
+    def start_polling(self):
+        self.updater.start_polling()

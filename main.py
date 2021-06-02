@@ -20,11 +20,12 @@ START_COMMAND = 'start_command'
 IMPORT_FILE = 'import_file'
 CLASS_NAME = 'class_name'
 LOG_PATH = 'log_path'
-PREFIX = 'prefix'
 TYPE = 'type'
 FILESYSTEM_EVENT = 'fs'
 TIMER_EVENT = 'time'
+COMMS_EVENT = 'ce'
 REPEAT_TIME = 'rtime'
+COMMAND = 'command'
 
 def read_config(filename):
     config = configparser.ConfigParser()
@@ -67,10 +68,10 @@ if __name__ == '__main__':
     bot = None
 
     if CHAT_ID not in list(config['MAIN'].keys()) or config['MAIN'][CHAT_ID] == '':
-        bot = BotHandler(config['MAIN'][BOT_TOKEN], start_command = config['MAIN'][START_COMMAND], prefix = config['MAIN'][PREFIX])
+        bot = BotHandler(config['MAIN'][BOT_TOKEN], start_command = config['MAIN'][START_COMMAND])
         bot.wait_for_user()
     else:
-        bot = BotHandler(config['MAIN'][BOT_TOKEN], chat_id = config['MAIN'][CHAT_ID], prefix = config['MAIN'][PREFIX])
+        bot = BotHandler(config['MAIN'][BOT_TOKEN], chat_id = config['MAIN'][CHAT_ID])
 
     observers = []
     # go through each section, dinamically load the class   
@@ -99,12 +100,23 @@ if __name__ == '__main__':
             event_handler_class =   getattr(module, config[section][CLASS_NAME])
             event_handler = event_handler_class(config[section], bot.notify_user)
             schedule.every(rtime).minutes.do(event_handler.invoke)
+        elif config[section][TYPE] == COMMS_EVENT:
+            logger.debug('Extracting class ' + config[section][CLASS_NAME])
+            event_handler_class =   getattr(module, config[section][CLASS_NAME])
+            event_handler = event_handler_class(bot.chat_id)
+            command = config[section][COMMAND]
+            bot.register_command(command, event_handler.handler)
+        else:
+            logger.warning("Section type unknown: " + config[section][TYPE])
         
 
 
     logger.info("Starting observers")
     for observer in observers:
         observer.start()
+
+    logger.info("Starting polling for commands")
+    bot.start_polling()
 
     try:
         while True:

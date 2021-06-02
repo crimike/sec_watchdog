@@ -25,7 +25,6 @@ New section needs to be created for each extension
 token = xxx
 start_command = Hai
 chat_id = yyy
-prefix = test
 
 
 [AUTH]
