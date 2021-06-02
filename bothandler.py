@@ -32,7 +32,7 @@ class BotHandler:
         self.bot.get_updates(offset = upd.update_id + 1)
         self.logger.info("Successfully registered user with chat id: " + str(upd.message.chat_id))
         self.bot.send_message(chat_id = upd.message.chat_id, text = "Connection successful, welcome!")
-        return upd.message.chat_id
+        self.chat_id = str(upd.message.chat_id)
 
     def notify_user(self, message):
         if message == None or message == '':
