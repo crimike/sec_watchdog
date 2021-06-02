@@ -39,7 +39,7 @@ class BotHandler:
             return
         self.logger.debug("Sending the following message to chat ID: " + str(self.chat_id))
         self.logger.debug(message)
-        self.bot.send_message(chat_id = self.chat_id, text = msg)
+        self.bot.send_message(chat_id = self.chat_id, text = message)
 
     def register_command(self, command, handler):
         dispatcher = self.updater.dispatcher
