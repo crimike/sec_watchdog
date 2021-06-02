@@ -23,7 +23,7 @@ class AuthEventHandler(FileSystemEventHandler):
                 evt = ''.join(line.split(':')[3:])
                 #if '[preauth]' not in evt:
                     # preauth fails before authentication
-                if 'session closed for user' not in evt and 'session opened for user' not in evt:
+                if 'session closed for user' not in evt and 'session opened for user' not in evt and 'Did not receive identification string from' not in evt and 'Connection closed by' not in evt and 'Received disconnect from' not in evt and 'Disconnected from invalid user' not in evt and 'Disconnected from authenticating' not in evt:
                     self.notify(evt)
             if 'sudo: ' in line:
                 # Sudo event
